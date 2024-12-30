@@ -1,0 +1,22 @@
+services:
+  postgis_db:
+    image: postgis/postgis:latest
+    restart: always
+    environment:
+      POSTGRES_DB: o2p
+      POSTGRES_USER: o2p
+      POSTGRES_PASSWORD: o2p
+    ports:
+      - 5432:5432
+    volumes:
+      - ./data/postgis:/var/lib/postgresql/data
+
+  osm2psql:
+    depends_on:
+      - postgis_db
+    build:
+      context: .
+    environment:
+      PGPASSWORD: o2p
+    volumes:
+      - ./data/osm:/osm/data
