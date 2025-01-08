@@ -10,13 +10,22 @@ services:
       - 5432:5432
     volumes:
       - ./data/postgis:/var/lib/postgresql/data
+      - ./database/init.sql:/database/scripts/init.sql
+    deploy:
+      resources:
+        limits:
+          cpus: "4" # Allocate 2 CPUs
+          memory: 4G # Allocate 8GB of memory
 
-  osm2psql:
+  osm2pgrouting:
     depends_on:
       - postgis_db
     build:
       context: .
     environment:
       PGPASSWORD: o2p
-    volumes:
-      - ./data/osm:/osm/data
+    deploy:
+      resources:
+        limits:
+          cpus: "4" # Allocate 2 CPUs
+          memory: 8G # Allocate 8GB of memory

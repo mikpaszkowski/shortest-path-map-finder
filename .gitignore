@@ -1,2 +1,4 @@
 node_modules/
 data/
+osm/
+.env

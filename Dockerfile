@@ -1,15 +1,16 @@
-FROM iboates/osm2pgsql:latest
+FROM iboates/osm2pgrouting:latest
 
 # Set the working directory
 WORKDIR /osm
 
 # Copy the script into the container
-COPY ./scripts/import.sh import.sh
-COPY ./scripts/download_osm.sh download_osm.sh
+COPY ./setup/import.sh import.sh
+# COPY ./setup/download_osm.sh download_osm.sh
+COPY osm/greater-london.osm greater-london.osm
 
-RUN chmod +x download_osm.sh import.sh
+# RUN chmod +x download_osm.sh import.sh
 
 # Make the script executable
-RUN /bin/sh download_osm.sh
+# RUN /bin/sh download_osm.sh
 
 ENTRYPOINT ["/bin/sh", "import.sh"]
