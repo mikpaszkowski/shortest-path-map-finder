@@ -15,3 +15,4 @@ SELECT pgr_createTopology('ways', 0.00001, 'the_geom', 'id');
 -- Create indexes on the source and target columns
 CREATE INDEX source_idx ON ways("source");
 CREATE INDEX target_idx ON ways("target");
+CREATE INDEX idx_ways_geom ON public.ways USING GIST (the_geom);
