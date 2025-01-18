@@ -1,8 +1,14 @@
 .map-container {
-    height: 100%;
-    width: 100%;
+  height: 100%;
+  width: 100%;
 }
 
 .MuiLinearProgress-root {
-    height: 7px;
+  height: 7px;
+}
+
+.MuiAlert-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }

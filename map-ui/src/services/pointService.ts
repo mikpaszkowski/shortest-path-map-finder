@@ -1,5 +1,6 @@
 import axios from "axios";
 import qs from "qs";
+import { ImplementationMode, RoutePreference } from "../views/types";
 
 axios.defaults.withCredentials = false;
 
@@ -47,40 +48,65 @@ export interface IWayPath {
 }
 
 export const prepareWayPath = (pathItems: IShortestPathItem[]): IWayPath => {
-    const waypoints: IWayPoint[] = [];
+  const waypoints: IWayPoint[] = [];
 
-    pathItems.forEach(item => {
-        item.geometry.coordinates.forEach((coordinate, index) => {
-            waypoints.push({
-                id: item.node, // or use a different unique identifier if available
-                longitude: coordinate[0],
-                latitude: coordinate[1]
-            });
-        });
+  pathItems.forEach((item) => {
+    item.geometry.coordinates.forEach((coordinate, index) => {
+      waypoints.push({
+        id: item.node, // or use a different unique identifier if available
+        longitude: coordinate[0],
+        latitude: coordinate[1],
+      });
     });
+  });
 
-    return { waypoints };
+  return { waypoints };
 };
 export const getShortestPath = async (
   sourceId: number,
-  targetId: number
+  targetId: number,
+  routePreference: RoutePreference,
+  implementationMode: ImplementationMode
 ): Promise<IWayPath> => {
+  const url =
+    implementationMode === ImplementationMode.BUILT_IN
+      ? `${BASE_URL}/shortest-path`
+      : `${BASE_URL}/shortest-path/custom`;
   try {
-    const response = await axios.get<IShortestPathItem[]>(`${BASE_URL}/shortest-path`, {
+    const response = await axios.get<IShortestPathItem[]>(`${url}`, {
       params: {
         sourceId,
         targetId,
+        routePreference,
       },
     });
     // Consolidate coordinates from geometry into IWayPoint structure
-    const waypoints: IWayPoint[] = response.data.flatMap(item => ({
-        id: item.node, // or use a different unique identifier if available
-        longitude: item.startLongitude,
-        latitude: item.startLatitude
-    }))
+    const waypoints: IWayPoint[] = response.data.flatMap((item) => ({
+      id: item.node, // or use a different unique identifier if available
+      longitude: item.startLongitude,
+      latitude: item.startLatitude,
+    }));
     const lastWaypoint = response.data[response.data.length - 1];
-    console.log({ waypoints: [...waypoints, { id: lastWaypoint.node, latitude: lastWaypoint.endLatitude, longitude: lastWaypoint.endLongitude }] })
-    return { waypoints: [...waypoints, { id: lastWaypoint.node, latitude: lastWaypoint.endLatitude, longitude: lastWaypoint.endLongitude }] };
+    console.log({
+      waypoints: [
+        ...waypoints,
+        {
+          id: lastWaypoint.node,
+          latitude: lastWaypoint.endLatitude,
+          longitude: lastWaypoint.endLongitude,
+        },
+      ],
+    });
+    return {
+      waypoints: [
+        ...waypoints,
+        {
+          id: lastWaypoint.node,
+          latitude: lastWaypoint.endLatitude,
+          longitude: lastWaypoint.endLongitude,
+        },
+      ],
+    };
     // const wayPath = prepareWayPath(response.data);
     // console.log(wayPath.waypoints);
     // return { waypoints: wayPath.waypoints };
@@ -89,36 +115,57 @@ export const getShortestPath = async (
   }
 };
 
-
 export const getShortestPathWithIntermediatePoints = async (
-    sourceId: number,
-    targetId: number,
-    intermediatePoints: number[],
-    routePreference = "TIME"
-  ): Promise<IWayPath> => {
-    try {
-      const response = await axios.get<IShortestPathItem[]>(`${BASE_URL}/shortest-path/intermediate-points`, {
+  sourceId: number,
+  targetId: number,
+  intermediatePoints: number[],
+  routePreference = "TIME"
+): Promise<IWayPath> => {
+  try {
+    const response = await axios.get<IShortestPathItem[]>(
+      `${BASE_URL}/shortest-path/intermediate-points`,
+      {
         params: {
           sourceId,
           targetId,
           routePreference,
-          intermediatePoints
+          intermediatePoints,
         },
-        paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' }), // Key change here
-      });
-      // Consolidate coordinates from geometry into IWayPoint structure
-      const waypoints: IWayPoint[] = response.data.flatMap(item => ({
-          id: item.node, // or use a different unique identifier if available
-          longitude: item.startLongitude,
-          latitude: item.startLatitude
-      }))
-      const lastWaypoint = response.data[response.data.length - 1];
-      console.log({ waypoints: [...waypoints, { id: lastWaypoint.node, latitude: lastWaypoint.endLatitude, longitude: lastWaypoint.endLongitude }] })
-      return { waypoints: [...waypoints, { id: lastWaypoint.node, latitude: lastWaypoint.endLatitude, longitude: lastWaypoint.endLongitude }] };
-      // const wayPath = prepareWayPath(response.data);
-      // console.log(wayPath.waypoints);
-      // return { waypoints: wayPath.waypoints };
-    } catch (error: Error | any) {
-      throw new Error(`Error fetching shortest path: ${error.message}`);
-    }
-  };
+        paramsSerializer: (params) =>
+          qs.stringify(params, { arrayFormat: "repeat" }), // Key change here
+      }
+    );
+    // Consolidate coordinates from geometry into IWayPoint structure
+    const waypoints: IWayPoint[] = response.data.flatMap((item) => ({
+      id: item.node, // or use a different unique identifier if available
+      longitude: item.startLongitude,
+      latitude: item.startLatitude,
+    }));
+    const lastWaypoint = response.data[response.data.length - 1];
+    console.log({
+      waypoints: [
+        ...waypoints,
+        {
+          id: lastWaypoint.node,
+          latitude: lastWaypoint.endLatitude,
+          longitude: lastWaypoint.endLongitude,
+        },
+      ],
+    });
+    return {
+      waypoints: [
+        ...waypoints,
+        {
+          id: lastWaypoint.node,
+          latitude: lastWaypoint.endLatitude,
+          longitude: lastWaypoint.endLongitude,
+        },
+      ],
+    };
+    // const wayPath = prepareWayPath(response.data);
+    // console.log(wayPath.waypoints);
+    // return { waypoints: wayPath.waypoints };
+  } catch (error: Error | any) {
+    throw new Error(`Error fetching shortest path: ${error.message}`);
+  }
+};

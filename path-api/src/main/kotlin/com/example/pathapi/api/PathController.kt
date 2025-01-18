@@ -29,8 +29,19 @@ class PathController(private val pathService: PathService) {
         @RequestParam targetId: Long,
         @RequestParam(required = false, defaultValue = "TIME") routePreference: RoutePreference
     ): List<PathSegmentDTO> {
-        return pathService.getShortestPath(sourceId, targetId, routePreference)
+        return pathService.getShortestPath(Pair(sourceId, targetId), routePreference, true)
     }
+
+    @GetMapping("/shortest-path/custom")
+    @CrossOrigin(origins = ["*"])
+    fun getShortestPathCustom(
+        @RequestParam sourceId: Long,
+        @RequestParam targetId: Long,
+        @RequestParam(required = false, defaultValue = "TIME") routePreference: RoutePreference
+    ): List<PathSegmentDTO> {
+        return pathService.getShortestPath(Pair(sourceId, targetId), routePreference, false)
+    }
+
 
     @GetMapping("/shortest-path/intermediate-points")
     @CrossOrigin(origins = ["*"])
@@ -40,6 +51,6 @@ class PathController(private val pathService: PathService) {
         @RequestParam(required = false, defaultValue = "TIME") routePreference: RoutePreference,
         @RequestParam intermediatePoints: List<Long>,
     ): List<PathSegmentDTO> {
-        return pathService.getShortestPathWithIntermediatePoints(sourceId, targetId, intermediatePoints, routePreference)
+        return pathService.getShortestPathWithIntermediatePoints(Pair(sourceId, targetId), intermediatePoints, routePreference)
     }
 }

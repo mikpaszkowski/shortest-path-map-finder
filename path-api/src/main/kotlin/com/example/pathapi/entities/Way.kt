@@ -22,13 +22,13 @@ class Way {
     @Column(name = "name", length = Integer.MAX_VALUE)
     var name: String? = null
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "source")
-    var source: com.example.pathapi.entities.WaysVerticesPgr? = null
+    var source: WaysVerticesPgr? = null
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "target")
-    var target: com.example.pathapi.entities.WaysVerticesPgr? = null
+    var target: WaysVerticesPgr? = null
 
     @Column(name = "cost")
     var cost: Double? = null

@@ -1,4 +1,4 @@
-export const API_KEY = import.meta.env.VITE_API_KEY;
+export const API_KEY = "";
 export const MAP_STYLE_CONFIG = `https://maps.geoapify.com/v1/styles/osm-bright/style.json?apiKey=${API_KEY}`;
 
 export const INITIAL_VIEW_STATE = {

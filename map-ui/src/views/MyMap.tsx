@@ -1,10 +1,11 @@
 import "./map.css";
 import { Map as MapGL } from "react-map-gl/maplibre";
 import { INITIAL_VIEW_STATE, MAP_STYLE_CONFIG } from "../config";
-import { ScatterplotLayer } from "@deck.gl/layers";
+import { PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
 import DeckGL, { PickingInfo, TripsLayer } from "deck.gl";
 import { MjolnirGestureEvent } from "mjolnir.js";
 import RouteIcon from "@mui/icons-material/RouteOutlined";
+import InfoIcon from "@mui/icons-material/InfoOutlined";
 
 import {
   getNearestPoint,
@@ -12,21 +13,25 @@ import {
   getShortestPathWithIntermediatePoints,
   IWayPath,
 } from "../services/pointService";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Button,
   Card,
   CardActions,
   CardContent,
+  Chip,
   CircularProgress,
   Container,
   FormLabel,
   LinearProgress,
+  Link,
   Radio,
   Typography,
 } from "@mui/material";
 import { useBtnPressed } from "../hooks/useBtnPressed";
-import { RoutePreference } from "./types";
+import { ImplementationMode, RoutePreference } from "./types";
+import { createGeoJSONCircle } from "../utils/util";
 
 interface Point {
   id: number;
@@ -35,16 +40,28 @@ interface Point {
   coordinates: number[];
 }
 
+interface IRadius {
+  contour: number[][];
+}
+
 const MyMap = () => {
   const [startPoint, setStartPoint] = React.useState<Point>();
   const [endPoint, setEndPoint] = React.useState<Point>();
   const [path, setPath] = React.useState<IWayPath>();
   const [loading, setLoading] = React.useState(false);
-  const [shortestPathProfile, setShortestPathProfile] =
-    React.useState(RoutePreference.DISTANCE);
+  const [shortestPathProfile, setShortestPathProfile] = React.useState(
+    RoutePreference.DISTANCE
+  );
 
-  const [intermediatePoints, setIntermediatePoints] = React.useState<Point[]>([]);
-    
+  const [implMode, setImplMode] = React.useState(ImplementationMode.CUSTOM);
+
+  const [intermediatePoints, setIntermediatePoints] = React.useState<Point[]>(
+    []
+  );
+  const [selectionRadius, setSelectionRadius] = React.useState<IRadius[]>([{
+    contour: [[]],
+  }]);
+
   const { isCtrlPressed } = useBtnPressed("Meta");
 
   const mapClick = async (info: PickingInfo, event: MjolnirGestureEvent) => {
@@ -53,7 +70,7 @@ const MyMap = () => {
       throw new Error("No coordinate found");
     }
 
-    if(isCtrlPressed && startPoint) {
+    if (isCtrlPressed && startPoint) {
       console.log("ctrl pressed and point selected");
       setLoading(true);
       const intermediatePoint = await getNearestPoint(
@@ -67,10 +84,13 @@ const MyMap = () => {
             id: intermediatePoint.id,
             color: [255, 255, 152],
             lineColor: [0, 0, 0],
-            coordinates: [intermediatePoint.longitude, intermediatePoint.latitude],
-          }
-        ]
-      })
+            coordinates: [
+              intermediatePoint.longitude,
+              intermediatePoint.latitude,
+            ],
+          },
+        ];
+      });
     }
 
     if (!startPoint || !endPoint) {
@@ -81,6 +101,11 @@ const MyMap = () => {
       );
 
       if (!startPoint) {
+        const circle = createGeoJSONCircle(
+          [coordinatesResponse.longitude, coordinatesResponse.latitude],
+          0.5
+        );
+        setSelectionRadius([{ contour: circle }]);
         setStartPoint({
           id: coordinatesResponse.id,
           color: [152, 255, 152],
@@ -155,14 +180,43 @@ const MyMap = () => {
     }
     setLoading(true);
     let shortestPath;
-    if(intermediatePoints.length > 0) {
-      shortestPath = await getShortestPathWithIntermediatePoints(startPoint.id, endPoint.id, intermediatePoints.map(p => p.id), "TIME");
-    } else {
-      shortestPath = await getShortestPath(startPoint.id, endPoint.id);
+    try {
+      if (intermediatePoints.length > 0) {
+        shortestPath = await getShortestPathWithIntermediatePoints(
+          startPoint.id,
+          endPoint.id,
+          intermediatePoints.map((p) => p.id),
+          shortestPathProfile
+        );
+      } else {
+        shortestPath = await getShortestPath(
+          startPoint.id,
+          endPoint.id,
+          shortestPathProfile,
+          implMode
+        );
+      }
+    }catch (error: Error | any) {
+      console.error(error.message);
+      setLoading(false);
     }
     setPath(shortestPath);
     setLoading(false);
   };
+
+  const radiusLayer = new PolygonLayer<IRadius>({
+    id: "PolygonLayer",
+    data: selectionRadius,
+
+    getPolygon: (d: IRadius) => d.contour,
+    getFillColor: (d: IRadius) => [80, 210, 0, 10],
+    getLineColor: [9, 142, 46, 175],
+    getLineWidth: 10,
+    lineWidthMinPixels: 1,
+    pickable: true,
+    stroked: true,
+    opacity: 0.4,
+  });
 
   const tripLayer = new TripsLayer<number[]>({
     id: "TripsLayer",
@@ -182,13 +236,22 @@ const MyMap = () => {
     setShortestPathProfile(e.target.value);
   };
 
+  const handleChangeImplMode = (e: any) => {
+    setImplMode(e.target.value);
+  }
+
   useEffect(() => {
     console.log(isCtrlPressed);
-  }, [isCtrlPressed])
+  }, [isCtrlPressed]);
 
   return (
     <>
-    <div onKeyDownCapture={(e) => console.log(e)} onContextMenu={(e) => { e.preventDefault(); }}>
+      <div
+        onKeyDownCapture={(e) => console.log(e)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+        }}
+      >
         <Card
           sx={{
             padding: 1,
@@ -202,7 +265,7 @@ const MyMap = () => {
           <CardContent>
             <Typography
               gutterBottom
-              sx={{ color: "text.primary", marginBottom: 5 }}
+              sx={{ color: "steelblue", marginBottom: 5, fontWeight: "bold" }}
               variant="h5"
             >
               Shortest Path Finder
@@ -210,12 +273,15 @@ const MyMap = () => {
                 sx={{
                   verticalAlign: "middle",
                   marginLeft: 1,
-                  color: "#00a152",
+                  marginBottom: 1,
+                  color: "text.primary",
                 }}
                 fontSize="large"
               />
             </Typography>
-            <Typography sx={{ color: "text.secondary", mb: 1.5 }}>
+            <Typography
+              sx={{ color: "text.secondary", mb: 1.5, fontWeight: "bold" }}
+            >
               Route Preference
             </Typography>
 
@@ -250,14 +316,59 @@ const MyMap = () => {
                   Quickest Path (Minimize Time)
                 </FormLabel>
               </Container>
+              <Alert icon={<InfoIcon fontSize="inherit"/>} severity="info" variant="outlined">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1, maxWidth: 300 }}
+                >
+                  Select whether you want the shortest distance or the quickest
+                  travel time.
+                </Typography>
+              </Alert>
+            </Container>
+            <Container
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                paddingLeft: 0,
+                marginTop: "1rem",
+              }}
+            >
               <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 1, maxWidth: 300 }}
+                sx={{ color: "text.secondary", mb: 1.5, fontWeight: "bold" }}
               >
-                Select whether you want the shortest distance or the quickest
-                travel time.
+                Implementation mode
               </Typography>
+              <Container style={{ padding: 0 }}>
+                <Radio
+                  checked={implMode === ImplementationMode.CUSTOM}
+                  onChange={handleChangeImplMode}
+                  value={ImplementationMode.CUSTOM}
+                  name="radio-buttons"
+                  inputProps={{ "aria-label": "radtio-btn-impl-custom" }}
+                />
+                <FormLabel id="radtio-btn-impl-custom">Custom</FormLabel>
+              </Container>
+              <Container style={{ padding: 0 }}>
+                <Radio
+                  checked={implMode === ImplementationMode.BUILT_IN}
+                  onChange={handleChangeImplMode}
+                  value={ImplementationMode.BUILT_IN}
+                  name="radio-buttons"
+                  inputProps={{ "aria-label": "radtio-btn-impl-builtin" }}
+                />
+                <FormLabel id="radtio-btn-impl-builtin">
+                  Built-in (
+                  <Link
+                    href="https://docs.pgrouting.org/3.0/en/pgRouting-concepts.html"
+                    target="_blank"
+                  >
+                    pgRouting
+                  </Link>
+                  )
+                </FormLabel>
+              </Container>
             </Container>
           </CardContent>
           <CardActions
@@ -284,8 +395,11 @@ const MyMap = () => {
                 setStartPoint(undefined);
                 setEndPoint(undefined);
                 setPath(undefined);
-                setIntermediatePoints(() => ([]));
+                setIntermediatePoints(() => []);
                 setLoading(false);
+                setSelectionRadius(() => {
+                  return []
+                });
               }}
               disabled={!startPoint && !endPoint && loading}
             >
@@ -293,21 +407,37 @@ const MyMap = () => {
             </Button>
           </CardActions>
         </Card>
-      <DeckGL
-        initialViewState={INITIAL_VIEW_STATE}
-        controller
-        onClick={mapClick}
-        layers={[tripLayer, intermediatePointsLayer, layer]}
-      >
-        <MapGL
-          style={{ width: "100%", height: "100%" }}
-          mapStyle={MAP_STYLE_CONFIG}
-        />
-      </DeckGL>
-      <Container sx={{ position: "absolute", height: '10px', width: "2000px", zIndex: 111 }}>
-        {loading && <LinearProgress />}
-      </Container>
-    </div>
+        <DeckGL
+          initialViewState={INITIAL_VIEW_STATE}
+          controller
+          onClick={mapClick}
+          layers={[radiusLayer, tripLayer, intermediatePointsLayer, layer]}
+        >
+          <MapGL
+            style={{ width: "100%", height: "100%" }}
+            mapStyle={MAP_STYLE_CONFIG}
+          />
+        </DeckGL>
+        {isCtrlPressed ? (
+          <Alert
+            icon={<InfoIcon fontSize="inherit" />}
+            severity="info"
+            sx={{ position: "absolute", top: 10, right: "50%", zIndex: 1 }}
+          >
+            <Typography fontSize={16}>Intermediate points mode</Typography>
+          </Alert>
+        ) : null}
+        <Container
+          sx={{
+            position: "absolute",
+            height: "10px",
+            width: "2000px",
+            zIndex: 111,
+          }}
+        >
+          {loading && <LinearProgress />}
+        </Container>
+      </div>
     </>
   );
 };
