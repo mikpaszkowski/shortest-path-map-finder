@@ -2,6 +2,7 @@ package com.example.pathapi.api
 
 import com.example.pathapi.dtos.NearestPointDTO
 import com.example.pathapi.dtos.PathSegmentDTO
+import com.example.pathapi.dtos.ShortestPathOutput
 import com.example.pathapi.services.PathService
 import org.locationtech.jts.geom.Point
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -28,8 +29,8 @@ class PathController(private val pathService: PathService) {
         @RequestParam sourceId: Long,
         @RequestParam targetId: Long,
         @RequestParam(required = false, defaultValue = "TIME") routePreference: RoutePreference
-    ): List<PathSegmentDTO> {
-        return pathService.getShortestPath(Pair(sourceId, targetId), routePreference, true)
+    ): ShortestPathOutput {
+        return pathService.getShortestPath(Pair(sourceId, targetId), routePreference, true, false)
     }
 
     @GetMapping("/shortest-path/custom")
@@ -37,9 +38,10 @@ class PathController(private val pathService: PathService) {
     fun getShortestPathCustom(
         @RequestParam sourceId: Long,
         @RequestParam targetId: Long,
-        @RequestParam(required = false, defaultValue = "TIME") routePreference: RoutePreference
-    ): List<PathSegmentDTO> {
-        return pathService.getShortestPath(Pair(sourceId, targetId), routePreference, false)
+        @RequestParam(required = false, defaultValue = "TIME") routePreference: RoutePreference,
+        @RequestParam(required = false, defaultValue = "false") minimizeLeftTurns: Boolean
+    ): ShortestPathOutput {
+        return pathService.getShortestPath(Pair(sourceId, targetId), routePreference, false, minimizeLeftTurns)
     }
 
 
@@ -50,7 +52,19 @@ class PathController(private val pathService: PathService) {
         @RequestParam targetId: Long,
         @RequestParam(required = false, defaultValue = "TIME") routePreference: RoutePreference,
         @RequestParam intermediatePoints: List<Long>,
-    ): List<PathSegmentDTO> {
-        return pathService.getShortestPathWithIntermediatePoints(Pair(sourceId, targetId), intermediatePoints, routePreference)
+    ): ShortestPathOutput {
+        return pathService.getShortestPathWithIntermediatePoints(Pair(sourceId, targetId), intermediatePoints, routePreference, true, false)
+    }
+
+    @GetMapping("/shortest-path/intermediate-points/custom")
+    @CrossOrigin(origins = ["*"])
+    fun getShortestPathWithIntermediatePointsCustom(
+        @RequestParam sourceId: Long,
+        @RequestParam targetId: Long,
+        @RequestParam(required = false, defaultValue = "TIME") routePreference: RoutePreference,
+        @RequestParam(required = false, defaultValue = "false") minimizeLeftTurns: Boolean,
+        @RequestParam intermediatePoints: List<Long>
+    ): ShortestPathOutput {
+        return pathService.getShortestPathWithIntermediatePoints(Pair(sourceId, targetId), intermediatePoints, routePreference, false, minimizeLeftTurns)
     }
 }

@@ -1,4 +1,5 @@
 /**
+ * credit: honzaap -> https://github.com/honzaap/Pathfinding/blob/main/src/helpers.js#L8
  * 
  * @param {Number[]} center array with longitude and latitude coordinates of the center point
  * @param {Number} radiusInKm radius

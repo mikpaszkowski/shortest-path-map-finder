@@ -1,19 +1,10 @@
 package com.example.pathapi.dtos
 
-import com.bedatadriven.jackson.datatype.jts.serialization.GeometryDeserializer
-import com.bedatadriven.jackson.datatype.jts.serialization.GeometrySerializer
 import com.example.pathapi.config.LineStringSerializer
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import jakarta.persistence.*
-import org.locationtech.jts.geom.Geometry
 
 import org.locationtech.jts.geom.LineString
-
-data class GeoJsonGeometry(
-    val type: String,
-    val coordinates: List<List<Double>>
-)
 
 @Entity
 data class PathSegmentDTO(
@@ -37,4 +28,7 @@ data class PathSegmentDTO(
     @Column(name = "geometry", nullable = false)
     @JsonSerialize(using = LineStringSerializer::class)
     val geometry: LineString,
+
+    @Column(name = "cost", nullable = false)
+    val cost: Double
 )

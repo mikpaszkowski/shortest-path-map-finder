@@ -11,18 +11,6 @@ DB_NAME="o2p"
 DB_USER="o2p"
 DB_PASSWORD="o2p"
 
-# # Wait for the db to be ready
-# echo "Waiting for the database to be ready ..."
-# until pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER; do
-#     sleep 2
-# done
-
-# cp $OSM_FILE /osm/data
-
-pwd
-# ls -l /data
-ls -l .
-
 # Import OSM data into the database
 if [ -f "$OSM_FILE" ]; then
     sleep 30

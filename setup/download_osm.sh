@@ -5,7 +5,7 @@ set -e
 
 # Variables
 OSM_URL="https://download.geofabrik.de/europe/united-kingdom/england/merseyside-latest.osm.pbf"
-OSM_FILE="./osm/greater-london.osm.pbf"
+OSM_FILE="./osm/liverpool.osm.pbf"
 
 sudo mkdir -p ./osm
 
@@ -18,6 +18,6 @@ else
     echo "Download completed: $OSM_FILE"
 
     echo "Converting PBF format to OSM format..."
-    sudo osmosis --read-pbf $OSM_FILE --write-xml ./osm/greater-london.osm
-    echo "Conversion completed: /osm/greater-london.osm"
+    sudo osmosis --read-pbf $OSM_FILE --write-xml ./osm/liverpool.osm.pbf
+    echo "Conversion completed: /osm/liverpool.osm"
 fi
