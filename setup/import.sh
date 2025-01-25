@@ -4,7 +4,7 @@
 set -e
 
 # Variables
-OSM_FILE="greater-london.osm"
+OSM_FILE="city.osm"
 DB_HOST="postgis_db"
 DB_PORT="5432"
 DB_NAME="o2p"
